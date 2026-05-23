@@ -25,6 +25,7 @@ class BookingContext(BaseModel):
     passenger_name: str | None = None
     confirmation_number: str | None = None
     seat_number: str | None = None
+    seat_update_requested: bool = False
 
 
 @function_tool
@@ -53,8 +54,15 @@ def update_seat(
     new_seat: str,
 ) -> str:
     """Update the seat for a given booking confirmation number."""
+    if not context.context.seat_update_requested:
+        return (
+            "I can only update a seat when the customer explicitly asks to "
+            "change, select, or move to a new seat."
+        )
+
     context.context.confirmation_number = confirmation_number
     context.context.seat_number = new_seat
+    context.context.seat_update_requested = False
     return f"Seat updated to {new_seat} for confirmation {confirmation_number}."
 
 
@@ -62,6 +70,40 @@ OFF_TOPIC_KEYWORDS = [
     "cricket", "recipe", "stock market", "movie", "politics",
     "weather", "bollywood", "ipl", "football",
 ]
+
+SEAT_UPDATE_KEYWORDS = [
+    "change my seat", "change seat", "update my seat", "update seat",
+    "move my seat", "move seat", "select seat", "choose seat",
+    "book seat", "assign seat", "seat to",
+]
+
+
+def _latest_user_text(input: str | list) -> str:
+    if isinstance(input, str):
+        return input
+
+    for item in reversed(input):
+        if not isinstance(item, dict) or item.get("role") != "user":
+            continue
+
+        content = item.get("content", "")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for part in content:
+                if isinstance(part, dict):
+                    parts.append(str(part.get("text") or part.get("content") or ""))
+                else:
+                    parts.append(str(part))
+            return " ".join(parts)
+
+    return str(input)
+
+
+def _is_seat_update_request(message: str) -> bool:
+    text = message.lower()
+    return any(keyword in text for keyword in SEAT_UPDATE_KEYWORDS)
 
 
 @input_guardrail
@@ -71,7 +113,7 @@ async def airline_topic_guardrail(
     input: str | list,
 ) -> GuardrailFunctionOutput:
     """Block messages that are clearly not related to airline travel."""
-    text = str(input).lower()
+    text = _latest_user_text(input).lower()
     is_off_topic = any(kw in text for kw in OFF_TOPIC_KEYWORDS)
     return GuardrailFunctionOutput(
         output_info=f"Off-topic query blocked: {text[:60]}",
@@ -99,7 +141,10 @@ def _build_agents(vector_store_id: str | None) -> Agent:
 
     faq_specialist = Agent[BookingContext](
         name="FAQ Specialist",
-        handoff_description="Answers general questions about baggage, seats, wifi, check-in, and policies.",
+        handoff_description=(
+            "Answers general questions about baggage, seat counts, seating "
+            "information, wifi, check-in, and policies."
+        ),
         instructions=(
             "You are an IndiGo Airlines customer service agent. "
             "Always use the available tools to answer questions — never rely on your own knowledge."
@@ -112,11 +157,17 @@ def _build_agents(vector_store_id: str | None) -> Agent:
 
     seat_specialist = Agent[BookingContext](
         name="Seat Booking Specialist",
-        handoff_description="Handles seat changes and booking updates.",
+        handoff_description=(
+            "Handles explicit requests to change, select, move, or update a "
+            "customer's seat for an existing booking."
+        ),
         instructions=(
             "You are a seat booking agent for Indigo Airlines. "
-            "Use whatever confirmation number and seat the customer has already provided. "
-            "Only ask for information that is missing, then call update_seat."
+            "Only call update_seat when the latest customer message explicitly asks "
+            "to change, select, move, or update a seat. "
+            "Do not update seats for informational questions like how many seats "
+            "are on a flight. If confirmation number or new seat is missing, ask "
+            "for the missing information."
         ),
         model="gpt-4o-mini",
         tools=[update_seat],
@@ -126,7 +177,11 @@ def _build_agents(vector_store_id: str | None) -> Agent:
         name="Triage Agent",
         instructions=(
             "You are the first point of contact for customer service for Indigo Airlines. "
-            "Route the customer to the right specialist agent based on their request."
+            "Route based only on the latest customer request. "
+            "Use FAQ Specialist for informational questions, including questions "
+            "about how many seats there are or seating policy. "
+            "Use Seat Booking Specialist only when the customer explicitly wants "
+            "to change, select, move, or update their seat."
         ),
         model="gpt-4o-mini",
         handoffs=[
@@ -178,7 +233,10 @@ async def run_chat(
     context: BookingContext,
 ) -> dict:
     triage = get_triage_agent()
-    input_messages = history + [{"role": "user", "content": user_message}]
+    context.seat_update_requested = (
+        context.seat_update_requested or _is_seat_update_request(user_message)
+    )
+    input_messages = [{"role": "user", "content": user_message}]
 
     handoffs_seen: list[str] = []
     final_reply = ""
@@ -205,11 +263,11 @@ async def run_chat(
     except InputGuardrailTripwireTriggered:
         final_reply = "I'm sorry, I can only help with airline-related questions. Please ask about flights, baggage, check-in, or bookings."
         blocked = True
-        new_history = input_messages
+        new_history = history
     except OutputGuardrailTripwireTriggered:
         final_reply = "I wasn't able to generate a complete answer. Please try rephrasing your question."
         blocked = True
-        new_history = input_messages
+        new_history = history
 
     return {
         "reply": final_reply,
