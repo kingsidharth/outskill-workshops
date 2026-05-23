@@ -29,7 +29,9 @@ async def lifespan(app: FastAPI):
         print(f"Initializing IndiGo FAQ vector store from {FAQ_PDF}...")
         await init_vector_store(str(FAQ_PDF))
     else:
-        print(f"Warning: IndiGo FAQ PDF not found at {FAQ_PDF}. Using keyword fallback.")
+        print(
+            f"Warning: IndiGo FAQ PDF not found at {FAQ_PDF}. Using keyword fallback."
+        )
 
     if RESUME_PDF.exists():
         print(f"Initializing resume vector store from {RESUME_PDF}...")
@@ -60,6 +62,7 @@ async def serve_page(page: str):
 
 
 # ---------- IndiGo Chat API ----------
+
 
 class IndigoChatRequest(BaseModel):
     message: str
@@ -105,6 +108,7 @@ async def indigo_chat(req: IndigoChatRequest):
 
 
 # ---------- Interview API ----------
+
 
 class InterviewStartResponse(BaseModel):
     session_id: str
@@ -195,6 +199,7 @@ async def interview_voice(
 
 
 # ---------- TTS utility ----------
+
 
 class TTSRequest(BaseModel):
     text: str

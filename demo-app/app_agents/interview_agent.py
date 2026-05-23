@@ -60,7 +60,8 @@ def _build_interview_agents(resume_store_id: str | None) -> Agent:
         name="FeedbackAgent",
         handoff_description="Gives the final interview scorecard.",
         model="gpt-4o",
-        instructions=VOICE_RULES + """
+        instructions=VOICE_RULES
+        + """
 Use CodeInterpreterTool if you need to calculate or aggregate a score.
 Create a concise final scorecard for the AI Agents Engineer interview.
 Mention one strength, one improvement area, and an overall score out of 5.
@@ -72,12 +73,15 @@ Mention one strength, one improvement area, and an overall score out of 5.
         name="QuestionerAgent",
         handoff_description="Asks AI agents interview questions and evaluates answers.",
         model="gpt-4o",
-        instructions=prompt_with_handoff_instructions(VOICE_RULES + """
+        instructions=prompt_with_handoff_instructions(
+            VOICE_RULES
+            + """
 You ask beginner-friendly AI Agents Engineer questions one at a time.
 Use WebSearchTool for current role expectations if needed.
 For each candidate answer, give one short evaluation sentence, then ask the next question.
 After 4 questions or if the candidate says they want to stop or finish, hand off to FeedbackAgent.
-"""),
+"""
+        ),
         tools=tools,
         handoffs=[feedback_agent],
     )
@@ -86,10 +90,13 @@ After 4 questions or if the candidate says they want to stop or finish, hand off
         name="GreeterAgent",
         handoff_description="Starts the interview and routes to the questioner.",
         model="gpt-4o",
-        instructions=prompt_with_handoff_instructions(VOICE_RULES + """
+        instructions=prompt_with_handoff_instructions(
+            VOICE_RULES
+            + """
 Greet the candidate warmly, explain this is an AI Agents Engineer interview for OpenAI,
 then immediately hand off to QuestionerAgent to begin.
-"""),
+"""
+        ),
         tools=[WebSearchTool()],
         handoffs=[questioner_agent],
     )
@@ -114,6 +121,7 @@ def _init_resume_store_sync(pdf_path: str) -> str:
     )
 
     import time
+
     while True:
         files = client.vector_stores.files.list(vector_store_id=resume_store.id).data
         if files and files[0].status == "completed":
@@ -132,7 +140,15 @@ async def init_resume_store(pdf_path: str) -> None:
 
 _sessions: dict[str, dict] = {}
 
-STOP_PHRASES = {"stop", "exit", "quit", "goodbye", "end interview", "finish", "that's all"}
+STOP_PHRASES = {
+    "stop",
+    "exit",
+    "quit",
+    "goodbye",
+    "end interview",
+    "finish",
+    "that's all",
+}
 
 
 async def start_session() -> dict:
@@ -178,7 +194,11 @@ async def send_message(session_id: str, user_text: str) -> dict:
         return {"error": "Session not found", "ended": True}
 
     if session["ended"]:
-        return {"reply": "This interview session has ended.", "agent": "System", "ended": True}
+        return {
+            "reply": "This interview session has ended.",
+            "agent": "System",
+            "ended": True,
+        }
 
     current_agent = session["current_agent"]
     history = session["history"] + [{"role": "user", "content": user_text}]

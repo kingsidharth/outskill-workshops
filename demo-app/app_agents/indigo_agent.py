@@ -67,14 +67,29 @@ def update_seat(
 
 
 OFF_TOPIC_KEYWORDS = [
-    "cricket", "recipe", "stock market", "movie", "politics",
-    "weather", "bollywood", "ipl", "football",
+    "cricket",
+    "recipe",
+    "stock market",
+    "movie",
+    "politics",
+    "weather",
+    "bollywood",
+    "ipl",
+    "football",
 ]
 
 SEAT_UPDATE_KEYWORDS = [
-    "change my seat", "change seat", "update my seat", "update seat",
-    "move my seat", "move seat", "select seat", "choose seat",
-    "book seat", "assign seat", "seat to",
+    "change my seat",
+    "change seat",
+    "update my seat",
+    "update seat",
+    "move my seat",
+    "move seat",
+    "select seat",
+    "choose seat",
+    "book seat",
+    "assign seat",
+    "seat to",
 ]
 
 
@@ -137,7 +152,11 @@ async def response_quality_guardrail(
 
 
 def _build_agents(vector_store_id: str | None) -> Agent:
-    faq_tools = [FileSearchTool(vector_store_ids=[vector_store_id])] if vector_store_id else [faq_lookup_tool]
+    faq_tools = (
+        [FileSearchTool(vector_store_ids=[vector_store_id])]
+        if vector_store_id
+        else [faq_lookup_tool]
+    )
 
     faq_specialist = Agent[BookingContext](
         name="FAQ Specialist",
@@ -211,6 +230,7 @@ def _init_vector_store_sync(pdf_path: str) -> str:
     )
 
     import time
+
     while True:
         files = client.vector_stores.files.list(vector_store_id=vector_store.id).data
         if files and files[0].status == "completed":
