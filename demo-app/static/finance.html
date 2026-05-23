@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Finance Company — AI Agent Showcase</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#131316",
+            "surface-container": "#1f1f22",
+            "on-surface": "#e4e1e6",
+            "on-surface-variant": "#c4c7c8",
+            "outline-variant": "#444748",
+            "outline": "#8e9192",
+            "border-subtle": "#27272A",
+          },
+          fontFamily: { sans: ["Geist", "sans-serif"] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Geist', sans-serif; background-color: #09090B; color: #e4e1e6; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .grid-texture {
+      background-image: linear-gradient(#121212 1px, transparent 1px), linear-gradient(90deg, #121212 1px, transparent 1px);
+      background-size: 40px 40px;
+      background-color: #09090B;
+    }
+    .step-card {
+      background: rgba(18, 18, 18, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid #27272A;
+      transition: border-color 0.3s ease;
+    }
+    .step-card.active { border-color: #10b981; }
+    .step-card.done { border-color: #10b981; }
+    .pulse { animation: pulse-ring 1.5s infinite; }
+    @keyframes pulse-ring {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    .output-box {
+      background: #0e0e11;
+      border: 1px solid #27272A;
+      font-family: 'Geist', monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <header class="sticky top-0 z-50 border-b border-[#27272A] bg-[#09090B]/90 backdrop-blur">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="text-white font-bold text-lg tracking-tighter flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+        AI SHOWCASE
+      </a>
+      <span class="text-emerald-400 text-sm font-medium uppercase tracking-widest">Finance Company</span>
+    </div>
+  </header>
+
+  <main class="grid-texture min-h-screen">
+    <section class="max-w-3xl mx-auto px-6 pt-12 pb-8">
+      <h1 class="text-3xl font-semibold text-white mb-2">Finance Company Analysis</h1>
+      <p class="text-[#8e9192] mb-8">Run a full investment pipeline: Market Research → Risk Assessment → Compliance Routing → Advisory Report</p>
+
+      <div class="flex gap-3 mb-10">
+        <input
+          id="companyInput"
+          type="text"
+          placeholder="Enter company name (e.g. NVIDIA, Apple, Tesla)"
+          class="flex-1 bg-[#1f1f22] border border-[#27272A] rounded-lg px-4 py-3 text-white placeholder-[#8e9192] focus:outline-none focus:border-emerald-500 transition-colors"
+        />
+        <button
+          id="startBtn"
+          onclick="startAnalysis()"
+          class="bg-emerald-500 text-black font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+          Run Analysis
+        </button>
+      </div>
+
+      <!-- Pipeline Steps -->
+      <div id="pipeline" class="space-y-4 mb-10 hidden">
+        <div id="step-market_research" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div id="icon-market_research" class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">search</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Market Research</p>
+            <p class="text-[#8e9192] text-sm">Searching financial news, earnings, and sentiment</p>
+          </div>
+          <span id="badge-market_research" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+
+        <div id="step-risk_assessment" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div id="icon-risk_assessment" class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">shield</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Risk Assessment</p>
+            <p class="text-[#8e9192] text-sm">Evaluating investment risks and classifying risk level</p>
+          </div>
+          <span id="badge-risk_assessment" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+
+        <div id="step-compliance" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div id="icon-compliance" class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">gavel</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Compliance Check</p>
+            <p class="text-[#8e9192] text-sm">Routing based on risk level — compliance review if HIGH</p>
+          </div>
+          <span id="badge-compliance" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+
+        <div id="step-advisory" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div id="icon-advisory" class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">description</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Advisory Report</p>
+            <p class="text-[#8e9192] text-sm">Generating client-facing investment recommendation</p>
+          </div>
+          <span id="badge-advisory" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div id="outputSection" class="hidden">
+        <h2 class="text-xl font-medium text-white mb-3">Advisory Report</h2>
+        <div id="riskBadge" class="mb-4 hidden">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"></span>
+        </div>
+        <div id="output" class="output-box rounded-lg p-6 text-sm text-[#c4c7c8] max-h-[500px] overflow-y-auto"></div>
+      </div>
+
+      <!-- Error -->
+      <div id="errorSection" class="hidden">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <p class="text-red-400 font-medium">Pipeline Failed</p>
+          <p id="errorMsg" class="text-red-300 text-sm mt-1"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let jobId = null;
+    let pollInterval = null;
+
+    async function startAnalysis() {
+      const company = document.getElementById('companyInput').value.trim();
+      if (!company) return;
+
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('startBtn').classList.add('opacity-50');
+      document.getElementById('pipeline').classList.remove('hidden');
+      document.getElementById('outputSection').classList.add('hidden');
+      document.getElementById('errorSection').classList.add('hidden');
+
+      resetSteps();
+
+      const res = await fetch('/api/finance/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company })
+      });
+      const data = await res.json();
+      jobId = data.job_id;
+
+      pollInterval = setInterval(pollStatus, 3000);
+    }
+
+    async function pollStatus() {
+      if (!jobId) return;
+      const res = await fetch(`/api/finance/status/${jobId}`);
+      const data = await res.json();
+
+      updateSteps(data.steps);
+
+      if (data.status === 'completed') {
+        clearInterval(pollInterval);
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').classList.remove('opacity-50');
+        showResult(data.result);
+      } else if (data.status === 'failed') {
+        clearInterval(pollInterval);
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').classList.remove('opacity-50');
+        showError(data.error);
+      }
+    }
+
+    function resetSteps() {
+      ['market_research', 'risk_assessment', 'compliance', 'advisory'].forEach(step => {
+        document.getElementById(`step-${step}`).className = 'step-card rounded-lg p-4 flex items-center gap-4';
+        document.getElementById(`badge-${step}`).textContent = 'pending';
+        document.getElementById(`badge-${step}`).className = 'text-xs font-medium uppercase tracking-wider text-[#8e9192]';
+      });
+    }
+
+    function updateSteps(steps) {
+      for (const [step, status] of Object.entries(steps)) {
+        const badge = document.getElementById(`badge-${step}`);
+        const card = document.getElementById(`step-${step}`);
+        if (!badge || !card) continue;
+
+        if (status === 'running') {
+          badge.textContent = 'running';
+          badge.className = 'text-xs font-medium uppercase tracking-wider text-emerald-400 pulse';
+          card.classList.add('active');
+        } else if (status === 'done') {
+          badge.textContent = 'done';
+          badge.className = 'text-xs font-medium uppercase tracking-wider text-emerald-400';
+          card.classList.add('done');
+          card.classList.remove('active');
+        } else if (status === 'skipped') {
+          badge.textContent = 'skipped';
+          badge.className = 'text-xs font-medium uppercase tracking-wider text-yellow-400';
+          card.classList.add('done');
+        }
+      }
+    }
+
+    function showResult(result) {
+      document.getElementById('outputSection').classList.remove('hidden');
+      document.getElementById('output').textContent = result.advisory;
+
+      const riskBadge = document.getElementById('riskBadge');
+      riskBadge.classList.remove('hidden');
+      const span = riskBadge.querySelector('span');
+      if (result.risk_level === 'HIGH') {
+        span.textContent = 'Risk Level: HIGH';
+        span.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30';
+      } else {
+        span.textContent = 'Risk Level: NORMAL';
+        span.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('errorSection').classList.remove('hidden');
+      document.getElementById('errorMsg').textContent = msg;
+    }
+
+    document.getElementById('companyInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startAnalysis();
+    });
+  </script>
+</body>
+</html>

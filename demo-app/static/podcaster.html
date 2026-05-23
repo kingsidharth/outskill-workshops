@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Podcaster — AI Agent Showcase</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#131316",
+            "surface-container": "#1f1f22",
+            "on-surface": "#e4e1e6",
+            "on-surface-variant": "#c4c7c8",
+            "outline-variant": "#444748",
+            "outline": "#8e9192",
+            "border-subtle": "#27272A",
+          },
+          fontFamily: { sans: ["Geist", "sans-serif"] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Geist', sans-serif; background-color: #09090B; color: #e4e1e6; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .grid-texture {
+      background-image: linear-gradient(#121212 1px, transparent 1px), linear-gradient(90deg, #121212 1px, transparent 1px);
+      background-size: 40px 40px;
+      background-color: #09090B;
+    }
+    .step-card {
+      background: rgba(18, 18, 18, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid #27272A;
+      transition: border-color 0.3s ease;
+    }
+    .step-card.active { border-color: #a78bfa; }
+    .step-card.done { border-color: #a78bfa; }
+    .pulse { animation: pulse-ring 1.5s infinite; }
+    @keyframes pulse-ring {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    .output-box {
+      background: #0e0e11;
+      border: 1px solid #27272A;
+      font-family: 'Geist', monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <header class="sticky top-0 z-50 border-b border-[#27272A] bg-[#09090B]/90 backdrop-blur">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="text-white font-bold text-lg tracking-tighter flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+        AI SHOWCASE
+      </a>
+      <span class="text-violet-400 text-sm font-medium uppercase tracking-widest">Podcaster</span>
+    </div>
+  </header>
+
+  <main class="grid-texture min-h-screen">
+    <section class="max-w-3xl mx-auto px-6 pt-12 pb-8">
+      <h1 class="text-3xl font-semibold text-white mb-2">AI Podcast Generator</h1>
+      <p class="text-[#8e9192] mb-8">Generate a full podcast script: Research → Structured Report → Two-Host Script</p>
+
+      <div class="flex gap-3 mb-10">
+        <input
+          id="topicInput"
+          type="text"
+          placeholder="Enter podcast topic (e.g. AI Agents, Quantum Computing)"
+          class="flex-1 bg-[#1f1f22] border border-[#27272A] rounded-lg px-4 py-3 text-white placeholder-[#8e9192] focus:outline-none focus:border-violet-500 transition-colors"
+        />
+        <button
+          id="startBtn"
+          onclick="startPodcast()"
+          class="bg-violet-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-violet-400 transition-colors flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+          Generate
+        </button>
+      </div>
+
+      <!-- Pipeline Steps -->
+      <div id="pipeline" class="space-y-4 mb-10 hidden">
+        <div id="step-research" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">search</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Research</p>
+            <p class="text-[#8e9192] text-sm">Finding latest developments and news on the topic</p>
+          </div>
+          <span id="badge-research" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+
+        <div id="step-report" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">article</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Briefing Report</p>
+            <p class="text-[#8e9192] text-sm">Organizing findings into structured sections (with guardrail)</p>
+          </div>
+          <span id="badge-report" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+
+        <div id="step-script" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">mic</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Podcast Script</p>
+            <p class="text-[#8e9192] text-sm">Writing a two-host dialogue (Joe &amp; Jane)</p>
+          </div>
+          <span id="badge-script" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div id="outputSection" class="hidden">
+        <h2 class="text-xl font-medium text-white mb-3">Podcast Script</h2>
+        <div id="output" class="output-box rounded-lg p-6 text-sm text-[#c4c7c8] max-h-[600px] overflow-y-auto"></div>
+      </div>
+
+      <!-- Error -->
+      <div id="errorSection" class="hidden">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <p class="text-red-400 font-medium">Pipeline Failed</p>
+          <p id="errorMsg" class="text-red-300 text-sm mt-1"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let jobId = null;
+    let pollInterval = null;
+
+    async function startPodcast() {
+      const topic = document.getElementById('topicInput').value.trim();
+      if (!topic) return;
+
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('startBtn').classList.add('opacity-50');
+      document.getElementById('pipeline').classList.remove('hidden');
+      document.getElementById('outputSection').classList.add('hidden');
+      document.getElementById('errorSection').classList.add('hidden');
+
+      resetSteps();
+
+      const res = await fetch('/api/podcaster/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+      const data = await res.json();
+      jobId = data.job_id;
+
+      pollInterval = setInterval(pollStatus, 3000);
+    }
+
+    async function pollStatus() {
+      if (!jobId) return;
+      const res = await fetch(`/api/podcaster/status/${jobId}`);
+      const data = await res.json();
+
+      updateSteps(data.steps);
+
+      if (data.status === 'completed') {
+        clearInterval(pollInterval);
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').classList.remove('opacity-50');
+        showResult(data.result);
+      } else if (data.status === 'failed') {
+        clearInterval(pollInterval);
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').classList.remove('opacity-50');
+        showError(data.error);
+      }
+    }
+
+    function resetSteps() {
+      ['research', 'report', 'script'].forEach(step => {
+        document.getElementById(`step-${step}`).className = 'step-card rounded-lg p-4 flex items-center gap-4';
+        document.getElementById(`badge-${step}`).textContent = 'pending';
+        document.getElementById(`badge-${step}`).className = 'text-xs font-medium uppercase tracking-wider text-[#8e9192]';
+      });
+    }
+
+    function updateSteps(steps) {
+      for (const [step, status] of Object.entries(steps)) {
+        const badge = document.getElementById(`badge-${step}`);
+        const card = document.getElementById(`step-${step}`);
+        if (!badge || !card) continue;
+
+        if (status === 'running') {
+          badge.textContent = 'running';
+          badge.className = 'text-xs font-medium uppercase tracking-wider text-violet-400 pulse';
+          card.classList.add('active');
+        } else if (status === 'done') {
+          badge.textContent = 'done';
+          badge.className = 'text-xs font-medium uppercase tracking-wider text-violet-400';
+          card.classList.add('done');
+          card.classList.remove('active');
+        }
+      }
+    }
+
+    function showResult(result) {
+      document.getElementById('outputSection').classList.remove('hidden');
+      document.getElementById('output').textContent = result.script;
+    }
+
+    function showError(msg) {
+      document.getElementById('errorSection').classList.remove('hidden');
+      document.getElementById('errorMsg').textContent = msg;
+    }
+
+    document.getElementById('topicInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startPodcast();
+    });
+  </script>
+</body>
+</html>

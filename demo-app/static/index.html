@@ -51,6 +51,8 @@
     }
     .glow-blue { box-shadow: 0 0 60px rgba(59, 130, 246, 0.08); }
     .glow-purple { box-shadow: 0 0 60px rgba(139, 92, 246, 0.08); }
+    .glow-green { box-shadow: 0 0 60px rgba(16, 185, 129, 0.08); }
+    .glow-violet { box-shadow: 0 0 60px rgba(167, 139, 250, 0.08); }
   </style>
 </head>
 <body class="min-h-screen">
@@ -62,7 +64,8 @@
       <nav class="hidden md:flex gap-8">
         <a href="indigo.html" class="text-[#c4c7c8] text-sm hover:text-white transition-colors">IndiGo</a>
         <a href="assessment.html" class="text-[#c4c7c8] text-sm hover:text-white transition-colors">Assessment</a>
-        <a href="https://github.com" target="_blank" class="text-[#c4c7c8] text-sm hover:text-white transition-colors">Documentation</a>
+        <a href="finance.html" class="text-[#c4c7c8] text-sm hover:text-white transition-colors">Finance</a>
+        <a href="podcaster.html" class="text-[#c4c7c8] text-sm hover:text-white transition-colors">Podcaster</a>
       </nav>
       <div class="flex gap-3">
         <button class="text-white hover:opacity-70 transition-opacity">
@@ -89,7 +92,7 @@
           AI Agent Showcase
         </h1>
         <p class="text-[#c4c7c8] text-lg max-w-2xl mx-auto leading-relaxed">
-          A curated gallery of advanced, task-specific autonomous agents built with the OpenAI Agents SDK — demonstrating tools, handoffs, context, and guardrails.
+          A curated gallery of advanced, task-specific autonomous agents built with the OpenAI Agents SDK and CrewAI — demonstrating tools, handoffs, context, guardrails, and multi-agent pipelines.
         </p>
       </div>
     </section>
@@ -186,11 +189,97 @@
           </div>
         </div>
 
+        <!-- Finance Company Card -->
+        <div class="glass-card glow-green relative overflow-hidden rounded-lg group p-8 flex flex-col justify-between min-h-[520px]">
+          <div class="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/15 transition-colors duration-500"></div>
+          <div>
+            <div class="flex justify-between items-start mb-8">
+              <div>
+                <h3 class="text-xl font-medium text-white mb-1">Finance Company</h3>
+                <p class="text-[11px] font-medium uppercase tracking-widest text-[#8e9192]">CrewAI Flows &amp; Parallel Agents</p>
+              </div>
+              <span class="material-symbols-outlined text-white text-4xl">trending_up</span>
+            </div>
+
+            <div class="aspect-video w-full rounded bg-[#1f1f22] mb-8 overflow-hidden border border-[#27272A] flex items-center justify-center">
+              <div class="text-center p-6">
+                <span class="material-symbols-outlined text-[48px] text-emerald-400/60 mb-3 block">monitoring</span>
+                <p class="text-[#8e9192] text-sm">4-agent pipeline with risk routing,<br/>compliance checks, and advisory reports</p>
+              </div>
+            </div>
+
+            <ul class="space-y-2">
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                Market Research with EXA web search
+              </li>
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                Risk-based routing (compliance if HIGH)
+              </li>
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                Client-facing advisory report generation
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8 pt-6 border-t border-[#27272A]">
+            <a href="finance.html" class="w-full py-3 bg-white text-black text-sm font-medium uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center justify-center gap-2">
+              Launch Demo
+              <span class="material-symbols-outlined text-[18px]">arrow_outward</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Podcaster Card -->
+        <div class="glass-card glow-violet relative overflow-hidden rounded-lg group p-8 flex flex-col justify-between min-h-[520px]">
+          <div class="absolute -top-24 -right-24 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl group-hover:bg-violet-500/15 transition-colors duration-500"></div>
+          <div>
+            <div class="flex justify-between items-start mb-8">
+              <div>
+                <h3 class="text-xl font-medium text-white mb-1">AI Podcaster</h3>
+                <p class="text-[11px] font-medium uppercase tracking-widest text-[#8e9192]">CrewAI Multi-Agent Pipeline</p>
+              </div>
+              <span class="material-symbols-outlined text-white text-4xl">podcasts</span>
+            </div>
+
+            <div class="aspect-video w-full rounded bg-[#1f1f22] mb-8 overflow-hidden border border-[#27272A] flex items-center justify-center">
+              <div class="text-center p-6">
+                <span class="material-symbols-outlined text-[48px] text-violet-400/60 mb-3 block">record_voice_over</span>
+                <p class="text-[#8e9192] text-sm">3-agent pipeline with no-code guardrails<br/>generating full podcast scripts</p>
+              </div>
+            </div>
+
+            <ul class="space-y-2">
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                Research → Report → Script pipeline
+              </li>
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                No-code guardrails for quality control
+              </li>
+              <li class="flex items-center gap-2 text-[#c4c7c8] text-sm">
+                <span class="material-symbols-outlined text-[18px] text-green-400" style="font-variation-settings:'FILL' 1">check_circle</span>
+                Two-host dialogue script output
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8 pt-6 border-t border-[#27272A]">
+            <a href="podcaster.html" class="w-full py-3 bg-white text-black text-sm font-medium uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center justify-center gap-2">
+              Launch Demo
+              <span class="material-symbols-outlined text-[18px]">arrow_outward</span>
+            </a>
+          </div>
+        </div>
+
       </div>
 
       <!-- Tech stack footnote -->
       <div class="mt-12 text-center">
-        <p class="text-[#444748] text-xs uppercase tracking-widest">Built with OpenAI Agents SDK · FastAPI · Tailwind CSS</p>
+        <p class="text-[#444748] text-xs uppercase tracking-widest">Built with OpenAI Agents SDK · CrewAI · FastAPI · Tailwind CSS</p>
       </div>
     </section>
 
