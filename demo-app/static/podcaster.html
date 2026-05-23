@@ -55,6 +55,75 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    /* ── Speaker avatars ── */
+    .speaker-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: opacity 0.3s;
+    }
+    .speaker-wrap.inactive { opacity: 0.35; }
+
+    .avatar-ring {
+      border-radius: 50%;
+      padding: 4px;
+      transition: box-shadow 0.35s, background 0.35s;
+    }
+    #speaker-joe .avatar-ring   { background: linear-gradient(135deg,#7c3aed,#4f46e5); }
+    #speaker-jane .avatar-ring  { background: linear-gradient(135deg,#db2777,#e11d48); }
+    #speaker-joe.speaking .avatar-ring  { box-shadow: 0 0 0 3px rgba(139,92,246,0.55), 0 0 24px rgba(139,92,246,0.35); }
+    #speaker-jane.speaking .avatar-ring { box-shadow: 0 0 0 3px rgba(244,63,94,0.55),  0 0 24px rgba(244,63,94,0.35); }
+
+    .avatar-inner {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: #09090B;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Wave bars ── */
+    .wave-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 24px;
+    }
+    .wave-bar {
+      width: 4px;
+      height: 5px;
+      border-radius: 3px;
+      background: #3f3f46;
+      transform-origin: bottom;
+      transition: background 0.3s;
+    }
+    #speaker-joe.speaking  .wave-bar { background: #8b5cf6; animation: eq 0.7s ease-in-out infinite; }
+    #speaker-jane.speaking .wave-bar { background: #f43f5e; animation: eq 0.7s ease-in-out infinite; }
+
+    .wave-bar:nth-child(1) { animation-delay: 0.00s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.12s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.24s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.12s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.00s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.18s; }
+    .wave-bar:nth-child(7) { animation-delay: 0.06s; }
+
+    @keyframes eq {
+      0%, 100% { transform: scaleY(0.25); }
+      50%       { transform: scaleY(1); }
+    }
+
+    /* ── Podcast player card ── */
+    .player-card {
+      background: rgba(18, 18, 18, 0.9);
+      border: 1px solid #27272A;
+      backdrop-filter: blur(16px);
+    }
+
+    /* ── Script lines ── */
+    .script-line { transition: background 0.25s; border-radius: 6px; padding: 4px 8px; }
+    .script-line.highlighted { background: rgba(139,92,246,0.12); }
   </style>
 </head>
 <body class="min-h-screen">
@@ -70,9 +139,9 @@
   </header>
 
   <main class="grid-texture min-h-screen">
-    <section class="max-w-3xl mx-auto px-6 pt-12 pb-8">
+    <section class="max-w-3xl mx-auto px-6 pt-12 pb-16">
       <h1 class="text-3xl font-semibold text-white mb-2">AI Podcast Generator</h1>
-      <p class="text-[#8e9192] mb-8">Generate a full podcast script: Research → Structured Report → Two-Host Script</p>
+      <p class="text-[#8e9192] mb-8">Generate a full podcast: Research → Briefing → Script → Voice</p>
 
       <div class="flex gap-3 mb-10">
         <input
@@ -110,7 +179,7 @@
           </div>
           <div class="flex-1">
             <p class="text-white font-medium">Briefing Report</p>
-            <p class="text-[#8e9192] text-sm">Organizing findings into structured sections (with guardrail)</p>
+            <p class="text-[#8e9192] text-sm">Organising findings into structured sections (with guardrail)</p>
           </div>
           <span id="badge-report" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
         </div>
@@ -125,12 +194,101 @@
           </div>
           <span id="badge-script" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
         </div>
+
+        <div id="step-voice" class="step-card rounded-lg p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-[#27272A] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px] text-[#8e9192]">record_voice_over</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium">Voice Generation</p>
+            <p class="text-[#8e9192] text-sm">Synthesising audio for Joe &amp; Jane in parallel</p>
+          </div>
+          <span id="badge-voice" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
+        </div>
       </div>
 
-      <!-- Output -->
+      <!-- Podcast Player -->
+      <div id="playerSection" class="hidden mb-10">
+        <div class="player-card rounded-2xl p-8">
+          <!-- Topic label -->
+          <p id="podcastTopicLabel" class="text-center text-violet-400 text-xs font-semibold uppercase tracking-widest mb-6"></p>
+
+          <!-- Speakers -->
+          <div class="flex justify-center items-end gap-16 mb-8">
+            <!-- Joe -->
+            <div id="speaker-joe" class="speaker-wrap inactive">
+              <div class="avatar-ring">
+                <div class="avatar-inner">
+                  <span class="material-symbols-outlined text-[40px] text-violet-400" style="font-variation-settings:'FILL' 1">account_circle</span>
+                </div>
+              </div>
+              <div class="wave-bars">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <p class="text-white font-semibold text-sm">Joe</p>
+            </div>
+
+            <!-- Jane -->
+            <div id="speaker-jane" class="speaker-wrap inactive">
+              <div class="avatar-ring">
+                <div class="avatar-inner">
+                  <span class="material-symbols-outlined text-[40px] text-rose-400" style="font-variation-settings:'FILL' 1">account_circle</span>
+                </div>
+              </div>
+              <div class="wave-bars">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <p class="text-white font-semibold text-sm">Jane</p>
+            </div>
+          </div>
+
+          <!-- Current line -->
+          <p id="currentLine" class="text-center text-[#c4c7c8] text-sm italic min-h-[2.5rem] px-4 leading-relaxed"></p>
+
+          <!-- Controls -->
+          <div class="flex items-center justify-center gap-6 mt-6">
+            <button onclick="skipBack()" class="text-[#8e9192] hover:text-white transition-colors">
+              <span class="material-symbols-outlined text-[28px]">skip_previous</span>
+            </button>
+            <button id="playPauseBtn" onclick="togglePlay()" class="w-14 h-14 rounded-full bg-violet-500 hover:bg-violet-400 flex items-center justify-center transition-colors shadow-lg">
+              <span id="playIcon" class="material-symbols-outlined text-[28px] text-white">play_arrow</span>
+            </button>
+            <button onclick="skipForward()" class="text-[#8e9192] hover:text-white transition-colors">
+              <span class="material-symbols-outlined text-[28px]">skip_next</span>
+            </button>
+          </div>
+
+          <!-- Progress -->
+          <div class="mt-5 flex items-center gap-3">
+            <div class="flex-1 bg-[#27272A] rounded-full h-1.5">
+              <div id="progressBar" class="bg-violet-500 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+            </div>
+            <span id="segmentCounter" class="text-[#8e9192] text-xs tabular-nums whitespace-nowrap">0 / 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Script Transcript (collapsible) -->
       <div id="outputSection" class="hidden">
-        <h2 class="text-xl font-medium text-white mb-3">Podcast Script</h2>
-        <div id="output" class="output-box rounded-lg p-6 text-sm text-[#c4c7c8] max-h-[600px] overflow-y-auto"></div>
+        <details>
+          <summary class="cursor-pointer text-sm text-[#8e9192] hover:text-white flex items-center gap-2 mb-3 select-none transition-colors">
+            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+            View full script
+          </summary>
+          <div id="output" class="output-box rounded-lg p-6 text-sm text-[#c4c7c8] max-h-[500px] overflow-y-auto space-y-1"></div>
+        </details>
       </div>
 
       <!-- Error -->
@@ -146,6 +304,10 @@
   <script>
     let jobId = null;
     let pollInterval = null;
+    let segments = [];
+    let currentIdx = 0;
+    let isPlaying = false;
+    let currentAudio = null;
 
     async function startPodcast() {
       const topic = document.getElementById('topicInput').value.trim();
@@ -154,10 +316,12 @@
       document.getElementById('startBtn').disabled = true;
       document.getElementById('startBtn').classList.add('opacity-50');
       document.getElementById('pipeline').classList.remove('hidden');
+      document.getElementById('playerSection').classList.add('hidden');
       document.getElementById('outputSection').classList.add('hidden');
       document.getElementById('errorSection').classList.add('hidden');
 
       resetSteps();
+      resetPlayer();
 
       const res = await fetch('/api/podcaster/start', {
         method: 'POST',
@@ -191,10 +355,11 @@
     }
 
     function resetSteps() {
-      ['research', 'report', 'script'].forEach(step => {
-        document.getElementById(`step-${step}`).className = 'step-card rounded-lg p-4 flex items-center gap-4';
-        document.getElementById(`badge-${step}`).textContent = 'pending';
-        document.getElementById(`badge-${step}`).className = 'text-xs font-medium uppercase tracking-wider text-[#8e9192]';
+      ['research', 'report', 'script', 'voice'].forEach(step => {
+        const card = document.getElementById(`step-${step}`);
+        const badge = document.getElementById(`badge-${step}`);
+        if (card) card.className = 'step-card rounded-lg p-4 flex items-center gap-4';
+        if (badge) { badge.textContent = 'pending'; badge.className = 'text-xs font-medium uppercase tracking-wider text-[#8e9192]'; }
       });
     }
 
@@ -203,7 +368,6 @@
         const badge = document.getElementById(`badge-${step}`);
         const card = document.getElementById(`step-${step}`);
         if (!badge || !card) continue;
-
         if (status === 'running') {
           badge.textContent = 'running';
           badge.className = 'text-xs font-medium uppercase tracking-wider text-violet-400 pulse';
@@ -218,13 +382,144 @@
     }
 
     function showResult(result) {
-      document.getElementById('outputSection').classList.remove('hidden');
-      document.getElementById('output').textContent = result.script;
+      segments = result.segments || [];
+      currentIdx = 0;
+
+      // Podcast player
+      document.getElementById('podcastTopicLabel').textContent = result.topic || '';
+      document.getElementById('playerSection').classList.remove('hidden');
+      updateCounter();
+
+      // Script transcript
+      if (segments.length > 0) {
+        document.getElementById('outputSection').classList.remove('hidden');
+        const container = document.getElementById('output');
+        container.innerHTML = '';
+        segments.forEach((seg, i) => {
+          const div = document.createElement('div');
+          div.className = 'script-line';
+          div.id = `line-${i}`;
+          const nameColor = seg.speaker === 'Joe' ? 'text-violet-400' : 'text-rose-400';
+          div.innerHTML = `<span class="font-semibold ${nameColor}">${seg.speaker}:</span> <span class="text-[#c4c7c8]">${escapeHtml(seg.text)}</span>`;
+          container.appendChild(div);
+        });
+      } else if (result.script) {
+        document.getElementById('outputSection').classList.remove('hidden');
+        document.getElementById('output').textContent = result.script;
+      }
+
+      // Auto-play
+      startPlayback();
     }
 
     function showError(msg) {
       document.getElementById('errorSection').classList.remove('hidden');
       document.getElementById('errorMsg').textContent = msg;
+    }
+
+    /* ── Playback ── */
+
+    function resetPlayer() {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      segments = []; currentIdx = 0; isPlaying = false;
+      setSpeaking(null);
+      document.getElementById('currentLine').textContent = '';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('segmentCounter').textContent = '0 / 0';
+      document.getElementById('playIcon').textContent = 'play_arrow';
+    }
+
+    function startPlayback() {
+      if (segments.length === 0) return;
+      isPlaying = true;
+      document.getElementById('playIcon').textContent = 'pause';
+      playSegment(currentIdx);
+    }
+
+    function playSegment(idx) {
+      if (idx >= segments.length) {
+        isPlaying = false;
+        document.getElementById('playIcon').textContent = 'play_arrow';
+        setSpeaking(null);
+        document.getElementById('currentLine').textContent = '';
+        return;
+      }
+
+      currentIdx = idx;
+      const seg = segments[idx];
+
+      setSpeaking(seg.speaker);
+      document.getElementById('currentLine').textContent = `${seg.speaker}: ${seg.text}`;
+      highlightLine(idx);
+      updateCounter();
+
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      currentAudio = new Audio(`data:audio/mp3;base64,${seg.audio}`);
+      currentAudio.onended = () => { if (isPlaying) playSegment(idx + 1); };
+      currentAudio.play();
+    }
+
+    function togglePlay() {
+      if (segments.length === 0) return;
+      if (isPlaying) {
+        isPlaying = false;
+        if (currentAudio) currentAudio.pause();
+        document.getElementById('playIcon').textContent = 'play_arrow';
+        setSpeaking(null);
+      } else {
+        isPlaying = true;
+        document.getElementById('playIcon').textContent = 'pause';
+        if (currentAudio && currentAudio.paused) {
+          setSpeaking(segments[currentIdx]?.speaker || null);
+          currentAudio.play();
+          currentAudio.onended = () => { if (isPlaying) playSegment(currentIdx + 1); };
+        } else {
+          playSegment(currentIdx);
+        }
+      }
+    }
+
+    function skipBack() {
+      const target = Math.max(0, currentIdx - 1);
+      if (currentAudio) currentAudio.pause();
+      if (isPlaying) playSegment(target);
+      else { currentIdx = target; updateCounter(); highlightLine(target); setSpeaking(null); }
+    }
+
+    function skipForward() {
+      const target = Math.min(segments.length - 1, currentIdx + 1);
+      if (currentAudio) currentAudio.pause();
+      if (isPlaying) playSegment(target);
+      else { currentIdx = target; updateCounter(); highlightLine(target); setSpeaking(null); }
+    }
+
+    function setSpeaking(speaker) {
+      ['joe', 'jane'].forEach(s => {
+        const el = document.getElementById(`speaker-${s}`);
+        el.classList.remove('speaking', 'inactive');
+        if (!speaker) { el.classList.add('inactive'); }
+        else if (s === speaker.toLowerCase()) { el.classList.add('speaking'); }
+        else { el.classList.add('inactive'); }
+      });
+    }
+
+    function updateCounter() {
+      const total = segments.length;
+      document.getElementById('segmentCounter').textContent = `${currentIdx + 1} / ${total}`;
+      document.getElementById('progressBar').style.width = total > 0 ? `${((currentIdx + 1) / total) * 100}%` : '0%';
+    }
+
+    function highlightLine(idx) {
+      document.querySelectorAll('.script-line').forEach(el => el.classList.remove('highlighted'));
+      const line = document.getElementById(`line-${idx}`);
+      if (line) {
+        line.classList.add('highlighted');
+        line.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     document.getElementById('topicInput').addEventListener('keydown', (e) => {

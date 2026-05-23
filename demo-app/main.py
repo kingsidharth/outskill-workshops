@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import os
+import re
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -184,8 +185,8 @@ async def interview_voice(
     result = await send_message(session_id, user_text)
 
     tts_response = await asyncio.to_thread(
-        lambda: _openai_client.audio.speech.create(
-            model="tts-1",
+        lambda: _tts_client.audio.speech.create(
+            model=_TTS_MODEL,
             voice="nova",
             input=result["reply"],
             response_format="mp3",
@@ -205,6 +206,12 @@ async def interview_voice(
 
 # ---------- TTS utility ----------
 
+_tts_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
+_TTS_MODEL = "openai/gpt-4o-mini-tts-2025-12-15"
+
 
 class TTSRequest(BaseModel):
     text: str
@@ -214,8 +221,8 @@ class TTSRequest(BaseModel):
 @app.post("/api/tts")
 async def tts(req: TTSRequest):
     tts_response = await asyncio.to_thread(
-        lambda: _openai_client.audio.speech.create(
-            model="tts-1",
+        lambda: _tts_client.audio.speech.create(
+            model=_TTS_MODEL,
             voice=req.voice,
             input=req.text,
             response_format="mp3",
@@ -311,11 +318,46 @@ def _podcaster_callback(job_id: str):
     return cb
 
 
+def _parse_script_segments(script_text: str) -> list[dict]:
+    segments = []
+    for line in script_text.split("\n"):
+        line = line.strip()
+        m = re.match(r"\*{0,2}(Joe|Jane)\*{0,2}:\s*(.*)", line, re.IGNORECASE)
+        if m:
+            speaker = m.group(1).capitalize()
+            text = m.group(2).strip().strip("*").strip()
+            if text and len(text) > 4:
+                segments.append({"speaker": speaker, "text": text})
+    return segments
+
+
+async def _tts_segment(text: str, voice: str) -> bytes:
+    resp = await asyncio.to_thread(
+        lambda: _tts_client.audio.speech.create(
+            model=_TTS_MODEL, voice=voice, input=text, response_format="mp3"
+        )
+    )
+    return resp.content
+
+
 async def _run_podcaster_job(job_id: str, topic: str):
     try:
         result = await asyncio.to_thread(
             run_podcast, topic, _podcaster_callback(job_id)
         )
+
+        _podcaster_jobs[job_id]["steps"]["voice"] = "running"
+        voice_map = {"Joe": "onyx", "Jane": "nova"}
+        segments = _parse_script_segments(result["script"])[:50]
+
+        tasks = [_tts_segment(seg["text"], voice_map.get(seg["speaker"], "alloy")) for seg in segments]
+        audio_contents = await asyncio.gather(*tasks)
+
+        result["segments"] = [
+            {"speaker": seg["speaker"], "text": seg["text"], "audio": base64.b64encode(content).decode()}
+            for seg, content in zip(segments, audio_contents)
+        ]
+        _podcaster_jobs[job_id]["steps"]["voice"] = "done"
         _podcaster_jobs[job_id]["status"] = "completed"
         _podcaster_jobs[job_id]["result"] = result
     except Exception as e:
