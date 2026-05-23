@@ -7,6 +7,7 @@
 2. **Custom Tools** — Add a `@function_tool` to look up FAQs; explore `FileSearchTool` with a real PDF policy document
 3. **Multiple Agents + Handoffs** — Build a triage agent that routes customers to specialist agents (FAQ, seat booking)
 4. **Shared Context** — Pass a typed Pydantic context object across agents and tools to persist state across turns
+5. **Guardrails** — Add guardrails to the agent to ensure the input and output is safe and appropriate
 
 ### Notebook 2: Voice Interview Agent (AI Agents Engineer Role)
 1. **VoicePipeline Basics** — Audio in → STT → Agent → TTS → Audio out with `SingleAgentVoiceWorkflow`
