@@ -31,19 +31,20 @@ _podcaster_jobs: dict[str, dict] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if FAQ_PDF.exists():
+    document_search_enabled = os.getenv("ENABLE_DOCUMENT_SEARCH", "").lower() in {"1", "true", "yes"}
+    if document_search_enabled and FAQ_PDF.exists():
         print(f"Initializing IndiGo FAQ vector store from {FAQ_PDF}...")
         await init_vector_store(str(FAQ_PDF))
     else:
         print(
-            f"Warning: IndiGo FAQ PDF not found at {FAQ_PDF}. Using keyword fallback."
+            "IndiGo document search disabled or PDF unavailable. Using keyword fallback."
         )
 
-    if RESUME_PDF.exists():
+    if document_search_enabled and RESUME_PDF.exists():
         print(f"Initializing resume vector store from {RESUME_PDF}...")
         await init_resume_store(str(RESUME_PDF))
     else:
-        print("Resume PDF not found. Interview agent will use web search only.")
+        print("Resume document search disabled or PDF unavailable. Interview will use web search.")
 
     yield
 
