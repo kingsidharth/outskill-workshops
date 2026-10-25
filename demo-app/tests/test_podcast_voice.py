@@ -47,6 +47,31 @@ class PodcastVoiceTests(unittest.TestCase):
                 recovered[speaker] += text
         self.assertEqual(recovered, {segment["speaker"]: segment["text"] for segment in segments})
 
+    def test_fitting_turn_stays_whole_in_new_batch(self):
+        segments = [{"speaker": "Joe", "text": "x" * 3000}, {"speaker": "Jane", "text": "y" * 2000}]
+        self.assertEqual(podcast_voice._transcript_batches(segments), ["Joe: " + "x" * 3000 + "\n", "Jane: " + "y" * 2000 + "\n"])
+
+    def test_transient_failures_and_missing_audio_retry_but_are_bounded(self):
+        part = SimpleNamespace(inline_data=SimpleNamespace(data=b"\x00\x00", mime_type="audio/L16;rate=24000"))
+        valid = SimpleNamespace(candidates=[SimpleNamespace(content=SimpleNamespace(parts=[part]))])
+        missing = SimpleNamespace(candidates=[])
+        for results, succeeds in [([podcast_voice.errors.ServerError(500, {"message": "temporary"}), missing, valid], True), ([missing] * 3, False)]:
+            with (
+                patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}),
+                patch.object(podcast_voice.genai, "Client") as client_class,
+                patch.object(podcast_voice.time, "sleep") as sleep,
+            ):
+                generate = client_class.return_value.__enter__.return_value.models.generate_content
+                generate.side_effect = results
+                dialogue = [{"speaker": "Joe", "text": "Hello"}, {"speaker": "Jane", "text": "Hi"}]
+                if succeeds:
+                    self.assertTrue(podcast_voice.generate_podcast_audio(dialogue).startswith(b"RIFF"))
+                else:
+                    with self.assertRaises(RuntimeError):
+                        podcast_voice.generate_podcast_audio(dialogue)
+                self.assertEqual(generate.call_count, 3)
+                self.assertEqual(sleep.call_count, 2)
+
     def test_wav_batches_are_joined_in_order(self):
         chunks = [podcast_voice._to_wav(data, "audio/L16;rate=24000") for data in [b"\x01\x00" * 10, b"\x02\x00" * 20]]
         with wave.open(io.BytesIO(podcast_voice._join_wavs(chunks))) as audio:

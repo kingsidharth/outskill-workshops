@@ -2,10 +2,11 @@
 import io
 import os
 import re
+import time
 import wave
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 TTS_MODEL = "gemini-3.1-flash-tts-preview"
 HOST_VOICES = {"Joe": "Puck", "Jane": "Kore"}
@@ -45,6 +46,10 @@ def _transcript_batches(segments: list[dict]) -> list[str]:
     for segment in segments:
         prefix = f'{segment["speaker"]}: '
         remaining = segment["text"]
+        turn_bytes = len((prefix + remaining + "\n").encode())
+        if current and turn_bytes <= MAX_BATCH_BYTES and len(current.encode()) + turn_bytes > MAX_BATCH_BYTES:
+            batches.append(current)
+            current = ""
         while remaining:
             budget = MAX_BATCH_BYTES - len((current + prefix + "\n").encode())
             if budget <= 0:
@@ -88,6 +93,10 @@ def _join_wavs(chunks: list[bytes]) -> bytes:
     return output.getvalue()
 
 
+class _MissingAudioError(RuntimeError):
+    pass
+
+
 def generate_podcast_audio(segments: list[dict]) -> bytes:
     if not segments or {seg["speaker"] for seg in segments} != set(HOST_VOICES):
         raise ValueError("Podcast script must contain dialogue for both Joe and Jane.")
@@ -110,17 +119,24 @@ def generate_podcast_audio(segments: list[dict]) -> bytes:
     chunks = []
     with genai.Client(api_key=require_gemini_key()) as client:
         for transcript in _transcript_batches(segments):
-            response = client.models.generate_content(
-                model=os.getenv("GEMINI_TTS_MODEL", TTS_MODEL),
-                contents="Read this podcast dialogue naturally, using the two configured speakers:\n" + transcript,
-                config=config,
-            )
-            candidate = next(iter(response.candidates or []), None)
-            if candidate and "MAX_TOKENS" in str(getattr(candidate, "finish_reason", "")):
-                raise RuntimeError("Gemini TTS reached its audio limit; shorten the podcast dialogue.")
-            parts = (candidate.content.parts or []) if candidate and candidate.content else []
-            audio = next((part.inline_data for part in parts if part.inline_data and part.inline_data.data), None)
-            if audio is None:
-                raise RuntimeError("Gemini TTS returned no audio. Try a shorter podcast script.")
-            chunks.append(_to_wav(audio.data, audio.mime_type or ""))
+            for attempt in range(3):
+                try:
+                    response = client.models.generate_content(
+                        model=os.getenv("GEMINI_TTS_MODEL", TTS_MODEL),
+                        contents="Read this podcast dialogue naturally, using the two configured speakers:\n" + transcript,
+                        config=config,
+                    )
+                    candidate = next(iter(response.candidates or []), None)
+                    if candidate and "MAX_TOKENS" in str(getattr(candidate, "finish_reason", "")):
+                        raise RuntimeError("Gemini TTS reached its audio limit; shorten the podcast dialogue.")
+                    parts = (candidate.content.parts or []) if candidate and candidate.content else []
+                    audio = next((part.inline_data for part in parts if part.inline_data and part.inline_data.data), None)
+                    if audio is None:
+                        raise _MissingAudioError("Gemini TTS returned no audio after repeated attempts.")
+                    chunks.append(_to_wav(audio.data, audio.mime_type or ""))
+                    break
+                except (errors.ServerError, _MissingAudioError):
+                    if attempt == 2:
+                        raise
+                    time.sleep(2 ** attempt)
     return _join_wavs(chunks)
