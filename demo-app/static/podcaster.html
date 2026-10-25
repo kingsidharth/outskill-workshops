@@ -201,7 +201,7 @@
           </div>
           <div class="flex-1">
             <p class="text-white font-medium">Voice Generation</p>
-            <p class="text-[#8e9192] text-sm">Synthesising audio for Joe &amp; Jane in parallel</p>
+            <p class="text-[#8e9192] text-sm">Generating Joe &amp; Jane together with Gemini</p>
           </div>
           <span id="badge-voice" class="text-xs font-medium uppercase tracking-wider text-[#8e9192]">pending</span>
         </div>
@@ -213,6 +213,12 @@
           <!-- Topic label -->
           <p id="podcastTopicLabel" class="text-center text-violet-400 text-xs font-semibold uppercase tracking-widest mb-6"></p>
 
+          <div id="fullAudioPlayer" hidden>
+            <p class="text-[#c4c7c8] text-sm mb-4">Your Gemini podcast is ready. Press play to listen, or read the full script below.</p>
+            <audio id="podcastAudio" controls preload="metadata" aria-label="Podcast audio" style="width:100%"></audio>
+          </div>
+
+          <div id="segmentPlayer">
           <!-- Speakers -->
           <div class="flex justify-center items-end gap-16 mb-8">
             <!-- Joe -->
@@ -276,6 +282,7 @@
               <div id="progressBar" class="bg-violet-500 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
             </div>
             <span id="segmentCounter" class="text-[#8e9192] text-xs tabular-nums whitespace-nowrap">0 / 0</span>
+          </div>
           </div>
         </div>
       </div>
@@ -382,8 +389,18 @@
     }
 
     function showResult(result) {
+      resetPlayer();
       segments = result.segments || [];
       currentIdx = 0;
+      const hasFullAudio = Boolean(result.audio);
+      const hasSegmentAudio = segments.length > 0 && segments.every(seg => Boolean(seg.audio));
+      document.getElementById('fullAudioPlayer').hidden = !hasFullAudio;
+      document.getElementById('segmentPlayer').hidden = hasFullAudio || !hasSegmentAudio;
+      if (hasFullAudio) {
+        const audio = document.getElementById('podcastAudio');
+        audio.src = `data:${result.audio_mime_type || 'audio/wav'};base64,${result.audio}`;
+        audio.load();
+      }
 
       // Podcast player
       document.getElementById('podcastTopicLabel').textContent = result.topic || '';
@@ -400,7 +417,7 @@
           div.className = 'script-line';
           div.id = `line-${i}`;
           const nameColor = seg.speaker === 'Joe' ? 'text-violet-400' : 'text-rose-400';
-          div.innerHTML = `<span class="font-semibold ${nameColor}">${seg.speaker}:</span> <span class="text-[#c4c7c8]">${escapeHtml(seg.text)}</span>`;
+          div.innerHTML = `<span class="font-semibold ${nameColor}">${escapeHtml(seg.speaker)}:</span> <span class="text-[#c4c7c8]">${escapeHtml(seg.text)}</span>`;
           container.appendChild(div);
         });
       } else if (result.script) {
@@ -408,8 +425,7 @@
         document.getElementById('output').textContent = result.script;
       }
 
-      // Auto-play
-      startPlayback();
+      // Playback starts only when the listener presses play.
     }
 
     function showError(msg) {
@@ -421,6 +437,12 @@
 
     function resetPlayer() {
       if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      const audio = document.getElementById('podcastAudio');
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      document.getElementById('fullAudioPlayer').hidden = true;
+      document.getElementById('segmentPlayer').hidden = false;
       segments = []; currentIdx = 0; isPlaying = false;
       setSpeaking(null);
       document.getElementById('currentLine').textContent = '';
@@ -444,6 +466,7 @@
         document.getElementById('currentLine').textContent = '';
         return;
       }
+      if (!segments[idx]?.audio) return;
 
       currentIdx = idx;
       const seg = segments[idx];

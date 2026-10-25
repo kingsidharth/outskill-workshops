@@ -19,6 +19,7 @@ from app_agents.indigo_agent import BookingContext, init_vector_store, run_chat
 from app_agents.interview_agent import init_resume_store, send_message, start_session
 from app_agents.finance_agent import run_analysis
 from app_agents.podcaster_agent import run_podcast
+from app_agents.podcast_voice import generate_podcast_audio, require_gemini_key
 
 BASE_DIR = Path(__file__).parent
 FAQ_PDF = BASE_DIR.parent / "openai_agents_sdk" / "docs" / "IndiGo_FAQ.pdf"
@@ -31,19 +32,20 @@ _podcaster_jobs: dict[str, dict] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if FAQ_PDF.exists():
+    document_search_enabled = os.getenv("ENABLE_DOCUMENT_SEARCH", "").lower() in {"1", "true", "yes"}
+    if document_search_enabled and FAQ_PDF.exists():
         print(f"Initializing IndiGo FAQ vector store from {FAQ_PDF}...")
         await init_vector_store(str(FAQ_PDF))
     else:
         print(
-            f"Warning: IndiGo FAQ PDF not found at {FAQ_PDF}. Using keyword fallback."
+            "IndiGo document search disabled or PDF unavailable. Using keyword fallback."
         )
 
-    if RESUME_PDF.exists():
+    if document_search_enabled and RESUME_PDF.exists():
         print(f"Initializing resume vector store from {RESUME_PDF}...")
         await init_resume_store(str(RESUME_PDF))
     else:
-        print("Resume PDF not found. Interview agent will use web search only.")
+        print("Resume document search disabled or PDF unavailable. Interview will use web search.")
 
     yield
 
@@ -206,11 +208,8 @@ async def interview_voice(
 
 # ---------- TTS utility ----------
 
-_tts_client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-)
-_TTS_MODEL = "openai/gpt-4o-mini-tts-2025-12-15"
+_tts_client = _openai_client
+_TTS_MODEL = "gpt-4o-mini-tts-2025-12-15"
 
 
 class TTSRequest(BaseModel):
@@ -326,37 +325,24 @@ def _parse_script_segments(script_text: str) -> list[dict]:
         if m:
             speaker = m.group(1).capitalize()
             text = m.group(2).strip().strip("*").strip()
-            if text and len(text) > 4:
+            if text:
                 segments.append({"speaker": speaker, "text": text})
     return segments
 
 
-async def _tts_segment(text: str, voice: str) -> bytes:
-    resp = await asyncio.to_thread(
-        lambda: _tts_client.audio.speech.create(
-            model=_TTS_MODEL, voice=voice, input=text, response_format="mp3"
-        )
-    )
-    return resp.content
-
-
 async def _run_podcaster_job(job_id: str, topic: str):
     try:
+        require_gemini_key()
         result = await asyncio.to_thread(
             run_podcast, topic, _podcaster_callback(job_id)
         )
 
         _podcaster_jobs[job_id]["steps"]["voice"] = "running"
-        voice_map = {"Joe": "onyx", "Jane": "nova"}
-        segments = _parse_script_segments(result["script"])[:50]
-
-        tasks = [_tts_segment(seg["text"], voice_map.get(seg["speaker"], "alloy")) for seg in segments]
-        audio_contents = await asyncio.gather(*tasks)
-
-        result["segments"] = [
-            {"speaker": seg["speaker"], "text": seg["text"], "audio": base64.b64encode(content).decode()}
-            for seg, content in zip(segments, audio_contents)
-        ]
+        segments = _parse_script_segments(result["script"])
+        audio = await asyncio.to_thread(generate_podcast_audio, segments)
+        result["segments"] = segments
+        result["audio"] = base64.b64encode(audio).decode()
+        result["audio_mime_type"] = "audio/wav"
         _podcaster_jobs[job_id]["steps"]["voice"] = "done"
         _podcaster_jobs[job_id]["status"] = "completed"
         _podcaster_jobs[job_id]["result"] = result
