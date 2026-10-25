@@ -65,7 +65,7 @@ that document uploads happen only after explicit opt-in (with upload calls mocke
 If this environment was created with uv, install using
 `uv pip install --python .venv/bin/python -r requirements.txt` instead of pip.
 
-Podcast voice uses Gemini multi-speaker TTS in one request: Joe uses Puck and Jane
-uses Kore. The full transcript is retained, and PCM output is wrapped as WAV for
+Podcast voice uses Gemini multi-speaker TTS: Joe uses Puck and Jane uses Kore.
+Long dialogue is split into bounded requests and the WAV audio is joined in order. The full transcript is retained, and PCM output is wrapped as WAV for
 browser playback. Default model: `gemini-3.1-flash-tts-preview`; override with
 `GEMINI_TTS_MODEL` if needed. Podcast speech does not require an OpenRouter key.

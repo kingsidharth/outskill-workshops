@@ -35,6 +35,26 @@ class PodcastVoiceTests(unittest.TestCase):
                 self.assertEqual(wav.getframerate(), 24000)
                 self.assertEqual(wav.readframes(240), pcm)
 
+    def test_long_unicode_dialogue_is_bounded_without_text_loss(self):
+        segments = [{"speaker": "Joe", "text": "é" * 5000}, {"speaker": "Jane", "text": "sunshine " * 1500}]
+        batches = podcast_voice._transcript_batches(segments)
+        self.assertGreater(len(batches), 1)
+        recovered = {"Joe": "", "Jane": ""}
+        for batch in batches:
+            self.assertLessEqual(len(batch.encode()), podcast_voice.MAX_BATCH_BYTES)
+            for line in batch.splitlines():
+                speaker, text = line.split(": ", 1)
+                recovered[speaker] += text
+        self.assertEqual(recovered, {segment["speaker"]: segment["text"] for segment in segments})
+
+    def test_wav_batches_are_joined_in_order(self):
+        chunks = [podcast_voice._to_wav(data, "audio/L16;rate=24000") for data in [b"\x01\x00" * 10, b"\x02\x00" * 20]]
+        with wave.open(io.BytesIO(podcast_voice._join_wavs(chunks))) as audio:
+            self.assertEqual(audio.getnframes(), 30)
+            self.assertEqual(audio.readframes(30), b"\x01\x00" * 10 + b"\x02\x00" * 20)
+        with self.assertRaises(RuntimeError):
+            podcast_voice._join_wavs([chunks[0], podcast_voice._to_wav(b"\x00\x00", "audio/L16;rate=16000")])
+
     def test_rejects_empty_or_invalid_audio(self):
         for data, mime in [(b"", "audio/L16"), (b"x", "audio/L16"), (b"text", "text/plain")]:
             with self.subTest(mime=mime), self.assertRaises(RuntimeError):
