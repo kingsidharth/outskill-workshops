@@ -12,8 +12,8 @@ os.makedirs("task_outputs/podcaster", exist_ok=True)
 
 llm = LLM(
     model="openai/gpt-4.1-2025-04-14",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENAI_API_KEY", ""),
+    base_url="https://api.openai.com/v1",
 )
 
 os.environ["EXA_API_KEY"] = os.getenv("EXA_API_KEY", "")

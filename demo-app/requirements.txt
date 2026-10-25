@@ -7,3 +7,4 @@ crewai[tools]>=1.6.1,<2
 crewai-tools>=1.6.1,<2
 exa-py>=2.16.0,<3
 python-multipart
+google-genai>=1.65.0,<2

@@ -22,7 +22,8 @@ Use Python 3.11 or 3.12. Always use the same `.venv/bin/python` for installation
 and startup. The notebooks can use a different kernel, so a package installed in
 the root `.venv` is not available in this demo's `.venv` automatically.
 
-Configure `OPENAI_API_KEY`, `OPENROUTER_API_KEY` (voice generation), and `EXA_API_KEY`
+Configure `OPENAI_API_KEY` (agents and interview speech), `EXA_API_KEY`, and
+`GEMINI_API_KEY` (podcast speech; `GOOGLE_API_KEY` is also accepted)
 in the runtime environment before starting. The app also supports its existing
 repository-root dotenv configuration. Exa needs both the `exa-py` SDK (included in
 requirements) and an API key. `python-multipart` is included for voice uploads.
@@ -63,3 +64,8 @@ that document uploads happen only after explicit opt-in (with upload calls mocke
 
 If this environment was created with uv, install using
 `uv pip install --python .venv/bin/python -r requirements.txt` instead of pip.
+
+Podcast voice uses Gemini multi-speaker TTS in one request: Joe uses Puck and Jane
+uses Kore. The full transcript is retained, and PCM output is wrapped as WAV for
+browser playback. Default model: `gemini-3.1-flash-tts-preview`; override with
+`GEMINI_TTS_MODEL` if needed. Podcast speech does not require an OpenRouter key.
